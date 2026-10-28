@@ -1,0 +1,54 @@
+name: Build Tauri Android
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          
+      - name: Install pnpm
+        run: npm install -g pnpm
+        
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android
+          
+      - name: Setup Android NDK
+        uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r26d
+          add-to-path: true
+          
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          
+      - name: Install dependencies
+        run: pnpm install
+        
+      - name: Initialize Tauri Android
+        run: pnpm tauri android init
+        
+      - name: Build Android
+        run: pnpm tauri android build
+        env:
+          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: harbor-tauri-apk
+          path: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk

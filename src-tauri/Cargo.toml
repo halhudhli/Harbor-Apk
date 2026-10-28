@@ -43,7 +43,8 @@ silero-vad = ["dep:ort", "dep:ndarray"]
 asr-whisper = ["dep:whisper-rs"]
 chromaprint = []
 
-[dependencies]
+[target.'cfg(not(target_os = "android"))'.dependencies]
+# مكتبات سطح المكتب فقط
 anyhow = "1"
 tauri = { version = "2.12.0", features = ["protocol-asset", "tray-icon", "image-png", "image-ico"] }
 tauri-plugin-opener = "2"
