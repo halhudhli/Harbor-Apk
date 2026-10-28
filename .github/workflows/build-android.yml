@@ -2,7 +2,7 @@ name: Build Tauri Android
 
 on:
   push:
-    branches: [main]
+    branches: [main, beta-branch]
   workflow_dispatch:
 
 jobs:
@@ -41,7 +41,7 @@ jobs:
         
       - name: Generate Icons
         run: pnpm tauri icon
-
+        
       - name: Initialize Tauri Android
         run: pnpm tauri android init
         
