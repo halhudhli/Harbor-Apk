@@ -173,12 +173,14 @@ async fn ensure_pip_window(app: &AppHandle) -> Result<(), String> {
             .inner_size(480.0, 270.0)
             .min_inner_size(240.0, 135.0)
             .resizable(true)
+            .visible(false);
+        // Deliberately unowned. An owned window only floats above Harbor, and this
+        // has to stay above whatever the viewer switches to. Desktop runtimes only.
+        #[cfg(desktop)]
+        let builder = builder
             .decorations(false)
             .skip_taskbar(true)
             .shadow(false)
-            .visible(false)
-            // Deliberately unowned. An owned window only floats above Harbor, and this
-            // has to stay above whatever the viewer switches to.
             .always_on_top(true);
         // transparent() needs macos-private-api, so only Windows sets it here. The mac
         // and GTK render paths make their own webview see-through.
@@ -314,6 +316,7 @@ pub async fn pip_window_restore(app: AppHandle, state: tauri::State<'_, PipWindo
     pip_window_exit(app.clone(), state).await?;
     if let Some(main) = app.get_webview_window("main") {
         main.show().map_err(|e| format!("show: {e}"))?;
+        #[cfg(desktop)]
         main.unminimize().map_err(|e| format!("unminimize: {e}"))?;
         main.set_focus().map_err(|e| format!("focus: {e}"))?;
     }
