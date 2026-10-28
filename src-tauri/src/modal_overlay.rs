@@ -78,11 +78,11 @@ pub async fn modal_overlay_open(
             .inner_size(popup_size.0, popup_size.1)
             .position(pos.x, pos.y)
             .resizable(false)
-            .visible(true)
-            .focused(true);
+            .visible(true);
         // Window chrome setters exist only on desktop runtimes.
         #[cfg(desktop)]
         let builder = builder
+            .focused(true)
             .always_on_top(true)
             .decorations(false)
             .skip_taskbar(true)
