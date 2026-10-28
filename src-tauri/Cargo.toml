@@ -43,8 +43,7 @@ silero-vad = ["dep:ort", "dep:ndarray"]
 asr-whisper = ["dep:whisper-rs"]
 chromaprint = []
 
-[target.'cfg(not(target_os = "android"))'.dependencies]
-# مكتبات سطح المكتب فقط
+[dependencies]
 anyhow = "1"
 tauri = { version = "2.12.0", features = ["protocol-asset", "tray-icon", "image-png", "image-ico"] }
 tauri-plugin-opener = "2"
@@ -138,8 +137,10 @@ trash = { version = "=5.2.9", optional = true }
 libmpv2 = "4"
 libmpv2-sys = "4"
 tauri-plugin-single-instance = { version = "2", features = ["deep-link"] }
+tauri-plugin-updater = "2"
 minisign-verify = "0.2"
 tauri-plugin-process = "2"
+tauri-plugin-window-state = "2"
 notify-rust = "4"
 # native-tls means schannel on Windows and Security.framework on macOS, but it
 # means a cross-compiled OpenSSL on Android. Keep `default-features = false` on
@@ -263,7 +264,3 @@ core-video = "0.4"
 librespot-core = { path = "vendor/librespot-core" }
 # Expose cached connected-seeder counts until librqbit provides them upstream.
 librqbit = { path = "vendor/librqbit" }
-
-[target.'cfg(not(target_os = "android"))'.dependencies]
-tauri-plugin-window-state = "2"
-tauri-plugin-updater = "2"

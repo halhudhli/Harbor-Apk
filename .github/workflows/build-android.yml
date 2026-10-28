@@ -5,53 +5,76 @@ on:
     branches: [main, beta-branch]
   workflow_dispatch:
 
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
-      
+
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/.ghcup /usr/local/share/boost /opt/hostedtoolcache/CodeQL || true
+          df -h /
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          
-      - name: Install pnpm
-        run: npm install -g pnpm
-        
-      - name: Install Rust
+          node-version: '22'
+
+      - name: Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.9.0 --activate
+          pnpm --version
+
+      - name: Install Rust (Android arm64)
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: aarch64-linux-android, armv7-linux-androideabi, i686-linux-android, x86_64-linux-android
-          
-      - name: Setup Android NDK
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
-        with:
-          ndk-version: r26d
-          add-to-path: true
-          
+          targets: aarch64-linux-android
+
+      - name: Locate Android SDK / NDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> "$GITHUB_ENV"
+          NDK="${ANDROID_NDK_LATEST_HOME:-$ANDROID_NDK_HOME}"
+          echo "NDK_HOME=$NDK" >> "$GITHUB_ENV"
+          echo "Using NDK at $NDK"
+          ls "$NDK"
+
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-          
+          shared-key: android-aarch64
+
       - name: Install dependencies
-        run: pnpm install
-        
-      - name: Generate Icons
-        run: pnpm tauri icon
-        
+        run: pnpm install --frozen-lockfile
+
       - name: Initialize Tauri Android
-        run: pnpm tauri android init
-        
-      - name: Build Android
-        run: pnpm tauri android build
-        env:
-          NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
-          
+        run: pnpm tauri android init --ci
+
+      - name: Build Android APK (arm64)
+        run: pnpm tauri android build --apk --target aarch64 --debug --ci
+
+      - name: Collect APK
+        run: |
+          mkdir -p out
+          find src-tauri/gen/android/app/build/outputs/apk -name '*.apk' -exec cp {} out/ \;
+          ls -la out
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: harbor-tauri-apk
-          path: src-tauri/gen/android/app/build/outputs/apk/universal/release/*.apk
+          name: harbor-android-apk
+          path: out/*.apk
+          if-no-files-found: error
