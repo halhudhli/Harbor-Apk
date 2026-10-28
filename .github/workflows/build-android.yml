@@ -39,6 +39,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
         
+      - name: Generate Icons
+        run: pnpm tauri icon
+
       - name: Initialize Tauri Android
         run: pnpm tauri android init
         
