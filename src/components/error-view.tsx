@@ -41,7 +41,9 @@ function isNoisyError(reason: unknown, message?: string): boolean {
   // The Android binary registers only a subset of the desktop commands, so a
   // desktop-only feature reaching for its native half is expected there and
   // must not take over the whole screen.
-  if (isAndroid() && /\b(command|plugin) \S+ not found\b/.test(m)) return true;
+  // Tauri also leaves the window/webview plugins uninitialised on mobile, so the
+  // desktop UI's window calls reject with "plugin window not initialized".
+  if (isAndroid() && /\b(command|plugin) \S+ not (found|initialized)\b/.test(m)) return true;
   return false;
 }
 
