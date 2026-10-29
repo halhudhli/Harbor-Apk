@@ -1,7 +1,11 @@
+import { isAndroid } from "@/lib/platform";
 import type { ReactNode } from "react";
 import { useT } from "@/lib/i18n";
 
 export const isTauri = typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+/** True only where Harbor's bundled mpv exists. Android is Tauri but ships no libmpv. */
+export const hasMpv = isTauri && !isAndroid();
 
 export function DesktopOnlyBlock({ children }: { children: ReactNode }) {
   const t = useT();

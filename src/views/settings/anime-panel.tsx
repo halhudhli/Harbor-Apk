@@ -3,7 +3,8 @@ import { useState } from "react";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { ROW_DESC, Section, ToggleRow } from "./shared";
-import { isTauri } from "./player-panel/internals";
+// These panels configure mpv, so Android (no libmpv) gets the same notice as the browser.
+import { hasMpv as isTauri } from "./player-panel/internals";
 import { SvpSection } from "./anime-panel/svp-section";
 import { MotionCompare } from "./anime-panel/motion-compare";
 import { useSubTabs } from "./sub-tabs";

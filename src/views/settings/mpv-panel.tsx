@@ -4,7 +4,8 @@ import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
 import { ROW_DESC, Section, Segmented, ToggleRow } from "./shared";
 import { SettingRow } from "./kit";
-import { isTauri } from "./player-panel/internals";
+// These panels configure mpv, so Android (no libmpv) gets the same notice as the browser.
+import { hasMpv as isTauri } from "./player-panel/internals";
 import { QualityProfile } from "./mpv-panel/profile";
 import { BufferSizeSection } from "./mpv-panel/buffer";
 import { PictureDialsSection, ColorHdrSection } from "./mpv-panel/dials";

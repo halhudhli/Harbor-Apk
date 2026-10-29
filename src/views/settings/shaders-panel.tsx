@@ -7,7 +7,8 @@ import { SHADER_CATALOG } from "@/lib/player/shader-catalog";
 import { shaderDir } from "@/lib/shaders";
 import { Section, ToggleRow } from "./shared";
 import { SettingGroup } from "./kit";
-import { isTauri } from "./player-panel/internals";
+// These panels configure mpv, so Android (no libmpv) gets the same notice as the browser.
+import { hasMpv as isTauri } from "./player-panel/internals";
 import { Anime4kShaderList } from "./player-panel/anime4k-shader-list";
 import { ShaderCard } from "./shaders-panel/shader-card";
 import { STAGE_LABEL, STAGE_SEQUENCE } from "./shaders-panel/stages";
