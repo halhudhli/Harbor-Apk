@@ -66,6 +66,20 @@ jobs:
       - name: Initialize Tauri Android
         run: pnpm tauri android init --ci
 
+      # One fixed key for every build, so a new APK installs over the old one.
+      # Gradle signs debug builds with ~/.android/debug.keystore.
+      - name: Install signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_SIGNING_KEYSTORE }}
+        run: |
+          if [ -z "$KEYSTORE_B64" ]; then
+            echo "::warning::ANDROID_SIGNING_KEYSTORE secret is not set; this APK gets a throwaway key and will not update an installed copy."
+            exit 0
+          fi
+          mkdir -p ~/.android
+          echo "$KEYSTORE_B64" | tr -d ' \r\n' | base64 -d > ~/.android/debug.keystore
+          keytool -list -keystore ~/.android/debug.keystore -storepass android | grep -i fingerprint || true
+
       - name: Build Android APK (arm64)
         shell: bash
         run: |
