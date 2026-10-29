@@ -60,9 +60,13 @@ pub fn run() {
         });
 
     tauri::Builder::default()
-        .plugin(tauri_plugin_opener::Builder::new().open_js_links_on_click(false).build())
+        // The shell plugin's injected click handler sends target=_blank links to
+        // plugin:shell|open, which spawns xdg-open: Android has none, so every
+        // external link failed with "Scoped shell IO error". Opener routes the same
+        // links through the Android intent instead, and nothing on mobile spawns a
+        // process, so the shell plugin is left out of this builder.
+        .plugin(tauri_plugin_opener::Builder::new().open_js_links_on_click(true).build())
         .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_http::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())

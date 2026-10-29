@@ -5,6 +5,7 @@ import { submitErrorReport } from "@/lib/bug-report";
 import { loadStartupCrashReport, startupCrashToHarborError } from "@/lib/startup-crash";
 import { isStaleTauriListenerError } from "@/lib/tauri-unlisten";
 import { t as translate, useT } from "@/lib/i18n";
+import { isAndroid } from "@/lib/platform";
 
 export type HarborError = {
   code: string;
@@ -37,6 +38,10 @@ function isNoisyError(reason: unknown, message?: string): boolean {
   if (m.includes("request cancelled") || m.includes("request canceled")) return true;
   if (r?.name === "AbortError" || r?.name === "TimeoutError") return true;
   if (r?.name === "NetworkError") return true;
+  // The Android binary registers only a subset of the desktop commands, so a
+  // desktop-only feature reaching for its native half is expected there and
+  // must not take over the whole screen.
+  if (isAndroid() && /\b(command|plugin) \S+ not found\b/.test(m)) return true;
   return false;
 }
 
