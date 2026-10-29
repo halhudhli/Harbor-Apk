@@ -5,7 +5,7 @@ import { App } from "@/App";
 import { hydrateCustomThemes } from "@/lib/custom-themes";
 import { getUiLanguage } from "@/lib/i18n/store";
 import { ensureUiLocale } from "@/lib/i18n/load-locale";
-import { applyOsDataset } from "@/lib/platform";
+import { applyOsDataset, isAndroid } from "@/lib/platform";
 import { loadSecrets } from "@/lib/secret-store";
 import { getInstallFeatures, loadInstallFeatures } from "@/lib/features/install";
 import { initSubtitleCache } from "@/lib/subtitles/subtitle-cache";
@@ -222,7 +222,8 @@ function MainRoot() {
 
 async function mount() {
   await loadInstallFeatures();
-  const musicEnabled = getInstallFeatures().music;
+  // Music runs on native commands that the Android binary does not register.
+  const musicEnabled = getInstallFeatures().music && !isAndroid();
   if (
     "__TAURI_INTERNALS__" in window &&
     !isHdrOverlay &&
@@ -244,8 +245,16 @@ async function mount() {
       : Promise.resolve(),
   ]);
   if (!isHdrOverlay && !isModal && !isCaptions && !isDjDeck) void initSubtitleCache();
-  if (!isHdrOverlay && !isModal && !isCaptions && !isPip && !isVideoPip && !isDjDeck)
+  if (!isHdrOverlay && !isModal && !isCaptions && !isPip && !isVideoPip && !isDjDeck && !isAndroid())
     startTaskbarProgress();
+  // Android has no native startup handshake, so a desktop-only call that never
+  // settles must not leave the tablet on the splash forever.
+  if (isAndroid()) {
+    window.setTimeout(() => {
+      revealRoot();
+      document.getElementById("harbor-boot")?.remove();
+    }, 15_000);
+  }
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       {isHdrOverlay ? (
