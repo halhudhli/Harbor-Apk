@@ -7,6 +7,32 @@ import pkg from "./package.json" with { type: "json" };
 
 declare const process: { env: Record<string, string | undefined> };
 
+// Android only. Tauri leaves desktop-only window/webview commands unregistered on
+// mobile, and window.__TAURI_INTERNALS__.invoke cannot be wrapped (it is a
+// non-writable property), so @tauri-apps/api's invoke() is pointed at the
+// __HARBOR_INVOKE_SHIM__ hook that index.html installs on Android.
+function androidInvokeShim() {
+  const needle = "return window.__TAURI_INTERNALS__.invoke(cmd, args, options);";
+  return {
+    name: "harbor-android-invoke-shim",
+    enforce: "pre" as const,
+    transform(code: string, id: string) {
+      const file = id.split("?")[0].replace(/\\/g, "/");
+      if (!/\/@tauri-apps\/api\/core\.js$/.test(file)) return null;
+      if (!code.includes(needle)) {
+        throw new Error("harbor-android-invoke-shim: invoke() body changed in " + file);
+      }
+      return {
+        code: code.replace(
+          needle,
+          "return (window.__HARBOR_INVOKE_SHIM__ || window.__TAURI_INTERNALS__.invoke)(cmd, args, options);",
+        ),
+        map: null,
+      };
+    },
+  };
+}
+
 function silenceMediapipeSourcemap() {
   return {
     name: "silence-mediapipe-sourcemap",
@@ -53,7 +79,13 @@ export default defineConfig(({ mode }) => {
   const devHost = process.env.TAURI_DEV_HOST;
   return {
     staged: { "*": "vp check --fix" },
-    plugins: [react(), tailwindcss(), silenceMediapipeSourcemap(), servePublicMediapipe()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      silenceMediapipeSourcemap(),
+      servePublicMediapipe(),
+      ...(android ? [androidInvokeShim()] : []),
+    ],
     clearScreen: false,
     define: {
       __APP_VERSION__: JSON.stringify(pkg.version),

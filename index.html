@@ -23,9 +23,10 @@
       (function () {
         try {
           if (!/android/i.test(navigator.userAgent || "")) return;
-          var internals = window.__TAURI_INTERNALS__;
-          if (!internals || typeof internals.invoke !== "function") return;
-          var original = internals.invoke.bind(internals);
+          // Not read here: Android may inject the Tauri internals after this runs.
+          var original = function (cmd, args, options) {
+            return window.__TAURI_INTERNALS__.invoke(cmd, args, options);
+          };
           var dpr = function () { return window.devicePixelRatio || 1; };
           var size = function () {
             return { width: Math.round(window.innerWidth * dpr()), height: Math.round(window.innerHeight * dpr()) };
@@ -42,7 +43,10 @@
             if (name === "available_monitors" || name === "get_all_windows" || name === "get_all_webviews") return [];
             return null;
           };
-          internals.invoke = function (cmd, args, options) {
+          // __TAURI_INTERNALS__.invoke is a non-writable property, so the Android
+          // build routes @tauri-apps/api's invoke() through this hook instead
+          // (see androidInvokeShim in vite.config.ts).
+          window.__HARBOR_INVOKE_SHIM__ = function (cmd, args, options) {
             if (typeof cmd === "string" && (cmd.indexOf("plugin:window|") === 0 || cmd.indexOf("plugin:webview|") === 0)) {
               return Promise.resolve(original(cmd, args, options)).catch(function (err) {
                 var msg = String((err && err.message) || err || "").toLowerCase();
