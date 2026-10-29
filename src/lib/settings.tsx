@@ -35,6 +35,9 @@ import { markSectionDirty } from "./profile-sync/scheduler";
 import { configureLayoutStore } from "./layout-sync/store";
 import { SYNCED_SETTINGS_FIELDS } from "./layout-sync/sections";
 import { startTrayMenuBridge, type TrayMenuBridge } from "./tray-menu-bridge";
+import { isAndroid } from "./platform";
+
+const ANDROID = isAndroid();
 
 export type {
   ContentCategory,
@@ -621,9 +624,20 @@ export function SettingsProvider({
     previousSettings.current = settings;
   }, [settings]);
 
+  // Android draws no window chrome of its own and has no window to minimize,
+  // maximize or close, so it reads as if the native title bar were on: every
+  // custom min/max/close row is gated on that flag.
+  const exposedSettings = useMemo(
+    () =>
+      ANDROID && (!settings.useNativeTitleBar || settings.hybridTitleBar)
+        ? { ...settings, useNativeTitleBar: true, hybridTitleBar: false }
+        : settings,
+    [settings],
+  );
+
   const value = useMemo(
     () => ({
-      settings,
+      settings: exposedSettings,
       torrentEnginePolicyPending,
       torrentEnginePolicyError,
       update,
@@ -632,7 +646,7 @@ export function SettingsProvider({
       setSettingsLinked,
     }),
     [
-      settings,
+      exposedSettings,
       torrentEnginePolicyPending,
       torrentEnginePolicyError,
       update,

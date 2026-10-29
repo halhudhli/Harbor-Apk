@@ -1,6 +1,6 @@
 import { AlertTriangle } from "../icons";
 import { useEffect, useState } from "react";
-import { isMacDesktop, isWindowsDesktop } from "@/lib/platform";
+import { isAndroid, isMacDesktop, isWindowsDesktop } from "@/lib/platform";
 import { probeMpv, type MpvProbe } from "@/lib/player/mpv";
 import { useSettings } from "@/lib/settings";
 import { useT } from "@/lib/i18n";
@@ -74,7 +74,8 @@ export function PlayerEnginePanel() {
               tags={c.recommended ? <Tag accent text={t("Recommended")} /> : undefined}
             />
           ))}
-          {mpvProbe && !mpvProbe.available && (
+          {/* Android ships no libmpv at all, so the probe failing there is not a fault. */}
+          {mpvProbe && !mpvProbe.available && !isAndroid() && (
             <div className="flex items-start gap-2.5 rounded-[10px] bg-elevated px-4 py-3">
               <AlertTriangle
                 size={18}
@@ -97,7 +98,7 @@ export function PlayerEnginePanel() {
           )}
         </SettingGroup>
 
-        <ExternalPlayerSection />
+        {!isAndroid() && <ExternalPlayerSection />}
 
         {/* These only change Harbor's built-in mpv, so they are hidden when the user's own mpv is on. */}
         {!settings.playerExternalMpv && (
