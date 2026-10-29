@@ -16,6 +16,46 @@
           }
         } catch (e) {}
       })();
+      // Tauri does not initialise its window/webview plugins on Android, so every
+      // window call the desktop UI makes rejects with "plugin window not
+      // initialized". Android has one fullscreen webview, so answer those calls
+      // with what that webview actually is instead of letting them reject.
+      (function () {
+        try {
+          if (!/android/i.test(navigator.userAgent || "")) return;
+          var internals = window.__TAURI_INTERNALS__;
+          if (!internals || typeof internals.invoke !== "function") return;
+          var original = internals.invoke.bind(internals);
+          var dpr = function () { return window.devicePixelRatio || 1; };
+          var size = function () {
+            return { width: Math.round(window.innerWidth * dpr()), height: Math.round(window.innerHeight * dpr()) };
+          };
+          var answer = function (cmd) {
+            var name = cmd.split("|")[1] || "";
+            if (name === "scale_factor") return dpr();
+            if (name === "inner_size" || name === "outer_size") return size();
+            if (name === "inner_position" || name === "outer_position") return { x: 0, y: 0 };
+            if (name === "is_focused") return document.hasFocus();
+            if (name === "is_visible" || name === "is_enabled" || name === "is_resizable") return true;
+            if (name.indexOf("is_") === 0) return false;
+            if (name === "title") return document.title;
+            if (name === "available_monitors" || name === "get_all_windows" || name === "get_all_webviews") return [];
+            return null;
+          };
+          internals.invoke = function (cmd, args, options) {
+            if (typeof cmd === "string" && (cmd.indexOf("plugin:window|") === 0 || cmd.indexOf("plugin:webview|") === 0)) {
+              return Promise.resolve(original(cmd, args, options)).catch(function (err) {
+                var msg = String((err && err.message) || err || "").toLowerCase();
+                if (msg.indexOf("not initialized") >= 0 || msg.indexOf("not found") >= 0 || msg.indexOf("not supported") >= 0) {
+                  return answer(cmd);
+                }
+                throw err;
+              });
+            }
+            return original(cmd, args, options);
+          };
+        } catch (e) {}
+      })();
     </script>
     <meta name="theme-color" content="#111214" />
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />

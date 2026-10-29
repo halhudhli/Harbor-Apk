@@ -62,6 +62,7 @@ export function ErrorView() {
     let cancelled = false;
     const onError = (e: Event) => {
       const ce = e as CustomEvent<HarborError>;
+      if (isAndroid() && isNoisyError(undefined, ce.detail?.message)) return;
       setError(ce.detail);
     };
     const onWindowError = (e: ErrorEvent) => {
